@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 
 import redis
-import uuid
 from typing import Callable
-from functools import wraps
 
 class Cache:
     def __init__(self):
@@ -59,3 +57,14 @@ class Cache:
     def get_int(self, key: str) -> Union[int, None]:
         return self.get(key, fn=int)
 
+def replay(func: Callable):
+    method_name = func.__qualname__
+    input_key = method_name + ":inputs"
+    output_key = method_name + ":outputs"
+
+    inputs = cache._redis.lrange(input_key, 0, -1)
+    outputs = cache._redis.lrange(output_key, 0, -1)
+
+    print(f"{method_name} was called {len(inputs)} times:")
+    for input_args, output in zip(inputs, outputs):
+        print(f"{method_name}(*{input_args.decode('utf-8')}) -> {output.decode('utf-8')}")
